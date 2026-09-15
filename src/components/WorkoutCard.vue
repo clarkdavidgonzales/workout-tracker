@@ -93,9 +93,9 @@ const iconMap: Record<string, string> = {
 const displayIcon = computed(() => iconMap[props.workout.icon ?? 'barbell'] ?? barbellOutline);
 
 defineEmits<{
-  toggle: [id: number];
-  edit: [id: number];
-  remove: [id: number];
+  toggle: [id: string | number];
+  edit: [id: string | number];
+  remove: [id: string | number];
 }>();
 
 const formattedDate = computed(() =>

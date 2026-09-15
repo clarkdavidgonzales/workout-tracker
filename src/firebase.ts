@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
 
 const requiredEnv = (name: keyof ImportMetaEnv): string => {
   const value = import.meta.env[name];
@@ -21,3 +22,4 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
+export const database = getDatabase(firebaseApp);

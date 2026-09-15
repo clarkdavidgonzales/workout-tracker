@@ -38,8 +38,8 @@ import type { Workout } from '../types/workout';
 defineProps<{ workouts: Workout[] }>();
 
 defineEmits<{
-  toggle: [id: number];
-  edit: [id: number];
-  remove: [id: number];
+  toggle: [id: string | number];
+  edit: [id: string | number];
+  remove: [id: string | number];
 }>();
 </script>

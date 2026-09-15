@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, onMounted, ref } from 'vue';
 import {
   IonContent,
   IonHeader,
@@ -111,52 +111,23 @@ import {
 import WorkoutForm from '../components/WorkoutForm.vue';
 import WorkoutList from '../components/WorkoutList.vue';
 import type { Workout } from '../types/workout';
-
-const STORAGE_KEY = 'ionic-workout-tracker';
-
-const dateOffset = (days: number) => {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-};
-
-const defaultWorkouts: Workout[] = [
-  { id: 1, exercise: 'Bench Press', category: 'Chest', sets: 4, reps: 8, weight: 50, date: dateOffset(0), completed: true, icon: 'barbell' },
-  { id: 2, exercise: 'Barbell Squat', category: 'Legs', sets: 4, reps: 10, weight: 60, date: dateOffset(1), completed: false, icon: 'fitness' },
-  { id: 3, exercise: 'Morning Run', category: 'Cardio', sets: 3, reps: 10, weight: 0, date: dateOffset(2), completed: false, icon: 'walk' },
-];
+import { database } from '../firebase';
+import { onValue, push, ref as databaseRef, remove, update } from 'firebase/database';
 
 const workouts = ref<Workout[]>([]);
 const searchText = ref('');
 const filter = ref<'all' | 'planned' | 'completed'>('all');
 const editingWorkout = ref<Workout | null>(null);
+const workoutsRef = databaseRef(database, 'workouts');
 
-onMounted(() => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-
-  if (saved) {
-    try {
-      workouts.value = JSON.parse(saved) as Workout[];
-      return;
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
-  workouts.value = defaultWorkouts;
+const unsubscribe = onValue(workoutsRef, (snapshot) => {
+  const data = snapshot.val() as Record<string, Omit<Workout, 'id'>> | null;
+  workouts.value = data
+    ? Object.entries(data).map(([id, workout]) => ({ id, ...workout }))
+    : [];
 });
 
-watch(
-  workouts,
-  (newWorkouts) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newWorkouts));
-    } catch {
-      // Uploaded images can fill browser storage. The app remains usable for this session.
-    }
-  },
-  { deep: true },
-);
+onUnmounted(unsubscribe);
 
 const completedCount = computed(() => workouts.value.filter((workout) => workout.completed).length);
 const totalVolume = computed(() =>
@@ -182,15 +153,12 @@ const filteredWorkouts = computed(() => {
   });
 });
 
-const addWorkout = (workoutData: Omit<Workout, 'id' | 'completed'>) => {
-  workouts.value.unshift({
-    id: Date.now(),
-    ...workoutData,
-    completed: false,
-  });
+const addWorkout = async (workoutData: Omit<Workout, 'id' | 'completed'>) => {
+  const workoutRef = push(workoutsRef);
+  await update(workoutRef, { ...workoutData, completed: false });
 };
 
-const startEditing = async (id: number) => {
+const startEditing = async (id: string | number) => {
   const workout = workouts.value.find((item) => item.id === id);
   if (!workout) return;
 
@@ -199,19 +167,30 @@ const startEditing = async (id: number) => {
   document.querySelector('.form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-const updateWorkout = (updatedWorkout: Workout) => {
-  const index = workouts.value.findIndex((item) => item.id === updatedWorkout.id);
-  if (index !== -1) workouts.value[index] = updatedWorkout;
+const updateWorkout = async (updatedWorkout: Workout) => {
+  await update(databaseRef(database, `workouts/${updatedWorkout.id}`), {
+    exercise: updatedWorkout.exercise,
+    category: updatedWorkout.category,
+    sets: updatedWorkout.sets,
+    reps: updatedWorkout.reps,
+    weight: updatedWorkout.weight,
+    date: updatedWorkout.date,
+    photo: updatedWorkout.photo ?? null,
+    icon: updatedWorkout.icon ?? 'barbell',
+    completed: updatedWorkout.completed,
+  });
   editingWorkout.value = null;
 };
 
-const toggleCompleted = (id: number) => {
+const toggleCompleted = async (id: string | number) => {
   const workout = workouts.value.find((item) => item.id === id);
-  if (workout) workout.completed = !workout.completed;
+  if (workout) {
+    await update(databaseRef(database, `workouts/${id}`), { completed: !workout.completed });
+  }
 };
 
-const removeWorkout = (id: number) => {
-  workouts.value = workouts.value.filter((workout) => workout.id !== id);
+const removeWorkout = async (id: string | number) => {
+  await remove(databaseRef(database, `workouts/${id}`));
   if (editingWorkout.value?.id === id) editingWorkout.value = null;
 };
 </script>
