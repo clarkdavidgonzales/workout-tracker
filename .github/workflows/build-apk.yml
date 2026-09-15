@@ -39,7 +39,28 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 4. Build Ionic/Vue application
+      # 4. Verify Firebase configuration
+      # ----------------------------------------------------------
+      - name: Verify Firebase environment
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: |
+          for variable in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_DATABASE_URL VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_STORAGE_BUCKET VITE_FIREBASE_MESSAGING_SENDER_ID VITE_FIREBASE_APP_ID; do
+            if [ -z "${!variable}" ]; then
+              echo "Missing GitHub Actions secret: $variable"
+              exit 1
+            fi
+          done
+
+
+      # ----------------------------------------------------------
+      # 5. Build Ionic/Vue application
       # ----------------------------------------------------------
       - name: Build Ionic application
         env:
@@ -54,7 +75,7 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 5. Install Java 21
+      # 6. Install Java 21
       # IMPORTANT:
       # Capacitor Android currently compiles with Java 21.
       # ----------------------------------------------------------
@@ -66,7 +87,7 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 6. Confirm Java version
+      # 7. Confirm Java version
       # ----------------------------------------------------------
       - name: Check Java version
         run: |
@@ -76,21 +97,21 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 7. Synchronize Capacitor with Android
+      # 8. Synchronize Capacitor with Android
       # ----------------------------------------------------------
       - name: Sync Capacitor Android
         run: npx cap sync android
 
 
       # ----------------------------------------------------------
-      # 8. Give Gradle execution permission
+      # 9. Give Gradle execution permission
       # ----------------------------------------------------------
       - name: Make Gradle executable
         run: chmod +x android/gradlew
 
 
       # ----------------------------------------------------------
-      # 9. Check Gradle environment
+      # 10. Check Gradle environment
       # ----------------------------------------------------------
       - name: Check Gradle version
         working-directory: android
@@ -98,7 +119,7 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 10. Build debug APK
+      # 11. Build debug APK
       # ----------------------------------------------------------
       - name: Build Android APK
         working-directory: android
@@ -106,7 +127,7 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 11. Rename the generated APK
+      # 12. Rename the generated APK
       # ----------------------------------------------------------
       - name: Rename generated APK
         run: |
@@ -114,7 +135,7 @@ jobs:
 
 
       # ----------------------------------------------------------
-      # 12. Upload APK to GitHub Actions
+      # 13. Upload APK to GitHub Actions
       # ----------------------------------------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
