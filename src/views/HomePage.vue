@@ -33,6 +33,8 @@
           </div>
         </section>
 
+        <p v-if="databaseError" class="database-error">{{ databaseError }}</p>
+
         <section class="stats-grid">
           <div class="stat-item">
             <span class="stat-icon orange"><ion-icon :icon="calendarOutline" /></span>
@@ -118,13 +120,17 @@ const workouts = ref<Workout[]>([]);
 const searchText = ref('');
 const filter = ref<'all' | 'planned' | 'completed'>('all');
 const editingWorkout = ref<Workout | null>(null);
+const databaseError = ref('');
 const workoutsRef = databaseRef(database, 'workouts');
 
 const unsubscribe = onValue(workoutsRef, (snapshot) => {
+  databaseError.value = '';
   const data = snapshot.val() as Record<string, Omit<Workout, 'id'>> | null;
   workouts.value = data
     ? Object.entries(data).map(([id, workout]) => ({ id, ...workout }))
     : [];
+}, (error) => {
+  databaseError.value = `Unable to read workouts: ${error.message}`;
 });
 
 onUnmounted(unsubscribe);
@@ -154,8 +160,12 @@ const filteredWorkouts = computed(() => {
 });
 
 const addWorkout = async (workoutData: Omit<Workout, 'id' | 'completed'>) => {
-  const workoutRef = push(workoutsRef);
-  await update(workoutRef, { ...workoutData, completed: false });
+  try {
+    const workoutRef = push(workoutsRef);
+    await update(workoutRef, { ...workoutData, photo: workoutData.photo ?? null, completed: false });
+  } catch (error) {
+    databaseError.value = `Unable to add workout: ${error instanceof Error ? error.message : 'Firebase rejected the write.'}`;
+  }
 };
 
 const startEditing = async (id: string | number) => {
@@ -168,29 +178,41 @@ const startEditing = async (id: string | number) => {
 };
 
 const updateWorkout = async (updatedWorkout: Workout) => {
-  await update(databaseRef(database, `workouts/${updatedWorkout.id}`), {
-    exercise: updatedWorkout.exercise,
-    category: updatedWorkout.category,
-    sets: updatedWorkout.sets,
-    reps: updatedWorkout.reps,
-    weight: updatedWorkout.weight,
-    date: updatedWorkout.date,
-    photo: updatedWorkout.photo ?? null,
-    icon: updatedWorkout.icon ?? 'barbell',
-    completed: updatedWorkout.completed,
-  });
-  editingWorkout.value = null;
+  try {
+    await update(databaseRef(database, `workouts/${updatedWorkout.id}`), {
+      exercise: updatedWorkout.exercise,
+      category: updatedWorkout.category,
+      sets: updatedWorkout.sets,
+      reps: updatedWorkout.reps,
+      weight: updatedWorkout.weight,
+      date: updatedWorkout.date,
+      photo: updatedWorkout.photo ?? null,
+      icon: updatedWorkout.icon ?? 'barbell',
+      completed: updatedWorkout.completed,
+    });
+    editingWorkout.value = null;
+  } catch (error) {
+    databaseError.value = `Unable to update workout: ${error instanceof Error ? error.message : 'Firebase rejected the write.'}`;
+  }
 };
 
 const toggleCompleted = async (id: string | number) => {
   const workout = workouts.value.find((item) => item.id === id);
   if (workout) {
-    await update(databaseRef(database, `workouts/${id}`), { completed: !workout.completed });
+    try {
+      await update(databaseRef(database, `workouts/${id}`), { completed: !workout.completed });
+    } catch (error) {
+      databaseError.value = `Unable to update workout: ${error instanceof Error ? error.message : 'Firebase rejected the write.'}`;
+    }
   }
 };
 
 const removeWorkout = async (id: string | number) => {
-  await remove(databaseRef(database, `workouts/${id}`));
-  if (editingWorkout.value?.id === id) editingWorkout.value = null;
+  try {
+    await remove(databaseRef(database, `workouts/${id}`));
+    if (editingWorkout.value?.id === id) editingWorkout.value = null;
+  } catch (error) {
+    databaseError.value = `Unable to delete workout: ${error instanceof Error ? error.message : 'Firebase rejected the write.'}`;
+  }
 };
 </script>
