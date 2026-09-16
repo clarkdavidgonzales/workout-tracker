@@ -150,7 +150,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-            name: SpartanLog-APK-${{ github.run_number }}
+          name: SpartanLog-APK-${{ github.run_number }}
           path: WorkoutTracker.apk
           if-no-files-found: error
           retention-days: 30
