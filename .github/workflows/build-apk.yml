@@ -73,10 +73,10 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: npm run build
 
-        - name: Verify source revision
-          run: |
-            echo "Building commit: $(git rev-parse --short HEAD)"
-            test -f dist/index.html
+      - name: Verify source revision
+        run: |
+          echo "Building commit: $(git rev-parse --short HEAD)"
+          test -f dist/index.html
 
 
       # ----------------------------------------------------------
@@ -107,10 +107,10 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-        - name: Verify synchronized web assets
-          run: |
-            test -f android/app/src/main/assets/public/index.html
-            ls -lh android/app/src/main/assets/public/index.html
+      - name: Verify synchronized web assets
+        run: |
+          test -f android/app/src/main/assets/public/index.html
+          ls -lh android/app/src/main/assets/public/index.html
 
 
       # ----------------------------------------------------------
