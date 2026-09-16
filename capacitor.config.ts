@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'workout-tracker',
+  appId: 'com.spartanlog.app',
+  appName: 'SpartanLog',
   webDir: 'dist'
 };
 

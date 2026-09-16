@@ -44,6 +44,7 @@
         <div><strong>{{ workout.sets }}</strong><small>sets</small></div>
         <div><strong>{{ workout.reps }}</strong><small>reps</small></div>
         <div><strong>{{ workout.weight }}</strong><small>kg</small></div>
+        <div><strong>{{ workout.duration }}</strong><small>min</small></div>
       </div>
 
       <ion-button

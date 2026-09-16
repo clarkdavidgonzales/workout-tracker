@@ -5,7 +5,7 @@
         <div class="form-title-icon"><ion-icon :icon="addOutline" /></div>
         <div>
           <ion-card-title>{{ editingWorkout ? 'Edit workout' : 'Log a workout' }}</ion-card-title>
-          <ion-card-subtitle>{{ editingWorkout ? 'Update the workout details' : 'Add your next exercise' }}</ion-card-subtitle>
+          <ion-card-subtitle>{{ editingWorkout ? 'Update this personalized session' : 'Customize your personal workout plan' }}</ion-card-subtitle>
         </div>
       </div>
     </ion-card-header>
@@ -65,6 +65,33 @@
           />
         </ion-item>
 
+        <ion-item v-if="editingWorkout">
+          <ion-input
+            v-model="date"
+            type="date"
+            label="Workout date"
+            label-placement="stacked"
+          />
+        </ion-item>
+
+        <div class="exercise-examples">
+          <div class="examples-heading">
+            <span>Quick exercise examples</span>
+            <small>Tap to use one</small>
+          </div>
+          <div class="example-chips">
+            <button
+              v-for="example in exerciseExamples"
+              :key="example"
+              type="button"
+              class="example-chip"
+              @click="exercise = example"
+            >
+              {{ example }}
+            </button>
+          </div>
+        </div>
+
         <div class="field-row two">
           <ion-item>
             <ion-select
@@ -78,20 +105,15 @@
               <ion-select-option value="Shoulders">Shoulders</ion-select-option>
               <ion-select-option value="Arms">Arms</ion-select-option>
               <ion-select-option value="Legs">Legs</ion-select-option>
+              <ion-select-option value="Glutes">Glutes</ion-select-option>
+              <ion-select-option value="Hamstrings">Hamstrings</ion-select-option>
               <ion-select-option value="Core">Core</ion-select-option>
               <ion-select-option value="Cardio">Cardio</ion-select-option>
+              <ion-select-option value="Mobility">Mobility</ion-select-option>
               <ion-select-option value="Full Body">Full Body</ion-select-option>
             </ion-select>
           </ion-item>
 
-          <ion-item>
-            <ion-input
-              v-model="date"
-              type="date"
-              label="Date"
-              label-placement="stacked"
-            />
-          </ion-item>
         </div>
 
         <div class="field-row three">
@@ -103,6 +125,9 @@
           </ion-item>
           <ion-item>
             <ion-input v-model.number="weight" type="number" label="Kg" label-placement="stacked" :min="0" />
+          </ion-item>
+          <ion-item>
+            <ion-input v-model.number="duration" type="number" label="Minutes" label-placement="stacked" :min="1" />
           </ion-item>
         </div>
       </div>
@@ -130,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import {
   IonButton,
   IonCard,
@@ -164,6 +189,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const props = defineProps<{
   editingWorkout: Workout | null;
+  defaultDate: string;
 }>();
 
 const emit = defineEmits<{
@@ -173,6 +199,7 @@ const emit = defineEmits<{
     sets: number;
     reps: number;
     weight: number;
+    duration: number;
     date: string;
     photo?: string;
     icon: string;
@@ -195,11 +222,27 @@ const category = ref('Chest');
 const sets = ref(3);
 const reps = ref(10);
 const weight = ref(0);
+const duration = ref(45);
 const date = ref(today());
 const photo = ref('');
 const selectedIcon = ref('barbell');
 const fileInput = ref<HTMLInputElement | null>(null);
 const errorMessage = ref('');
+
+const examplesByCategory: Record<string, string[]> = {
+  Chest: ['Bench Press', 'Incline Dumbbell Press', 'Push-ups', 'Chest Fly'],
+  Back: ['Lat Pulldown', 'Pull-ups', 'Seated Cable Row', 'Barbell Row'],
+  Shoulders: ['Lateral Raises', 'Overhead Press', 'Front Raises', 'Face Pulls'],
+  Arms: ['Bicep Curls', 'Hammer Curls', 'Tricep Pushdown', 'Skull Crushers'],
+  Legs: ['Back Squat', 'Leg Press', 'Walking Lunges', 'Leg Extension'],
+  Glutes: ['Hip Thrust', 'Glute Bridge', 'Cable Kickbacks', 'Bulgarian Split Squat'],
+  Hamstrings: ['Romanian Deadlift', 'Leg Curl', 'Good Mornings', 'Kettlebell Swing'],
+  Core: ['Plank', 'Russian Twists', 'Hanging Knee Raises', 'Cable Crunches'],
+  Cardio: ['Treadmill Run', 'Cycling', 'Rowing', 'Jump Rope'],
+  Mobility: ['Hip Flexor Stretch', "World's Greatest Stretch", 'Shoulder Dislocates', 'Deep Squat Hold'],
+  'Full Body': ['Burpees', 'Clean and Press', 'Turkish Get-up', 'Mountain Climbers'],
+};
+const exerciseExamples = computed(() => examplesByCategory[category.value] ?? examplesByCategory.Chest);
 
 const openFilePicker = () => fileInput.value?.click();
 const removePhoto = () => {
@@ -242,7 +285,8 @@ const resetForm = () => {
   sets.value = 3;
   reps.value = 10;
   weight.value = 0;
-  date.value = today();
+  duration.value = 45;
+  date.value = props.defaultDate || today();
   photo.value = '';
   selectedIcon.value = 'barbell';
   if (fileInput.value) fileInput.value.value = '';
@@ -262,12 +306,17 @@ watch(
     sets.value = workout.sets;
     reps.value = workout.reps;
     weight.value = workout.weight;
+    duration.value = workout.duration ?? 45;
     date.value = workout.date;
     photo.value = workout.photo ?? '';
     selectedIcon.value = workout.icon ?? 'barbell';
     errorMessage.value = '';
   },
 );
+
+watch(() => props.defaultDate, (value) => {
+  if (!props.editingWorkout && value) date.value = value;
+});
 
 const cancelEdit = () => {
   emit('cancel');
@@ -279,13 +328,14 @@ const submitWorkout = () => {
   const numericSets = Number(sets.value);
   const numericReps = Number(reps.value);
   const numericWeight = Number(weight.value);
+  const numericDuration = Number(duration.value);
 
   if (!cleanExercise) {
     errorMessage.value = 'Please enter an exercise name.';
     return;
   }
 
-  if (numericSets < 1 || numericReps < 1 || numericWeight < 0 || !date.value) {
+  if (numericSets < 1 || numericReps < 1 || numericWeight < 0 || numericDuration < 1 || !date.value) {
     errorMessage.value = 'Please enter valid workout details.';
     return;
   }
@@ -296,6 +346,7 @@ const submitWorkout = () => {
     sets: numericSets,
     reps: numericReps,
     weight: numericWeight,
+    duration: numericDuration,
     date: date.value,
     photo: photo.value || undefined,
     icon: selectedIcon.value,

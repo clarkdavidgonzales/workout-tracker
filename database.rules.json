@@ -1,0 +1,36 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "profile": {
+          ".validate": "newData.hasChildren(['displayName', 'email', 'sex', 'age', 'height', 'weight', 'activityLevel', 'experienceLevel', 'availableMinutes', 'busyDays', 'targetMuscleGroups'])",
+          "age": { ".validate": "newData.isNumber() && newData.val() >= 13 && newData.val() <= 120" },
+          "height": { ".validate": "newData.isNumber() && newData.val() >= 100 && newData.val() <= 250" },
+          "weight": { ".validate": "newData.isNumber() && newData.val() >= 30 && newData.val() <= 500" },
+          "availableMinutes": { ".validate": "newData.isNumber() && (newData.val() === 30 || newData.val() === 45 || newData.val() === 60 || newData.val() === 90)" }
+        },
+        "bodyWeightLogs": {
+          "$date": {
+            ".validate": "newData.hasChildren(['date', 'weight'])",
+            "date": { ".validate": "newData.isString() && newData.val() === $date" },
+            "weight": { ".validate": "newData.isNumber() && newData.val() >= 30 && newData.val() <= 500" }
+          }
+        },
+        "workouts": {
+          "$workoutId": {
+            ".validate": "newData.hasChildren(['exercise', 'category', 'sets', 'reps', 'weight', 'duration', 'date', 'completed'])",
+            "sets": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100" },
+            "reps": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
+            "weight": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+            "duration": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1440" },
+            "completed": { ".validate": "newData.isBoolean()" }
+          }
+        }
+      }
+    }
+  }
+}

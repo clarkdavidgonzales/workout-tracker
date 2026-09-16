@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.spartanlog.app;
 
 import com.getcapacitor.BridgeActivity;
 

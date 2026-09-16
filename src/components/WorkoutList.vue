@@ -22,8 +22,8 @@
     <ion-card v-else class="empty-card">
       <ion-card-content>
         <ion-icon :icon="barbellOutline" />
-        <h3>No workouts found</h3>
-        <p>Add a workout or change your search/filter.</p>
+        <h3>No sessions planned</h3>
+        <p>Choose another day or add a workout for this date.</p>
       </ion-card-content>
     </ion-card>
   </section>
